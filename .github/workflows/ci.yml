@@ -1,0 +1,42 @@
+name: CI
+'on':
+  pull_request: {}
+  push:
+    branches:
+    - '**'
+jobs:
+  governance-validate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        BRANCH="${{ github.head_ref || github.ref_name }}"
+        COMMIT_MSG="$(git log -1 --pretty=%B)"
+        echo "governance-validate: branch=$BRANCH"
+        if ! echo "$BRANCH" | grep -Eq '^(feature|bugfix|hotfix)/([A-Za-z0-9]+-[0-9]+|[0-9]+)-[a-z0-9]+(-[a-z0-9]+)*$'; then
+          echo "POLICY VIOLATION: branch '$BRANCH' does not match <type>/<ticket-id>-<description> (allowed types: feature, bugfix, hotfix)"
+          exit 1
+        fi
+        BTYPE=$(echo "$BRANCH" | cut -d"/" -f1)
+        TICKET=$(echo "$BRANCH" | sed -E 's#^[^/]+/([A-Za-z0-9]+-[0-9]+|[0-9]+)-.*#\1#')
+        case "$BTYPE" in
+            feature) CTYPE="feat" ;;
+            bugfix) CTYPE="fix" ;;
+            hotfix) CTYPE="hotfix" ;;
+          *) echo "POLICY VIOLATION: unknown branch type $BTYPE"; exit 1 ;;
+        esac
+        if ! echo "$COMMIT_MSG" | grep -Eq "^${CTYPE}\(${TICKET}\): .+"; then
+          echo "POLICY VIOLATION: commit '$COMMIT_MSG' does not match expected ${CTYPE}(${TICKET}): <description>"
+          exit 1
+        fi
+        echo "governance-validate passed: $BTYPE branch -> $CTYPE commit for ticket $TICKET"
+  python:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: pip install -r requirements.txt
+    - run: pytest
+    needs: governance-validate
