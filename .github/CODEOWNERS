@@ -1,0 +1,7 @@
+# Governance-configurator generated CODEOWNERS.
+# Maps the "Maintainer" governance role (required_approvals policy, tier 5 /
+# native GitHub "Admin" per git-role-mapping) to its resolved provider identity.
+# Only identity that resolved successfully for this solo-account test run
+# (see governance-configurator report: dinesh.bodda@techvedika.com did not
+# resolve to a GitHub account via the search/users-by-email lookup).
+* @Siddhu123456
